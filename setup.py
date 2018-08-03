@@ -16,10 +16,10 @@ setup(
     author="Jordan Matelsky",
     author_email="opensource@matelsky.com",
     description=("fup"),
-    license="BSD",
+    license="Apache 2.0",
     keywords=[
     ],
-    #url="https://github.com/ ... / ... /tarball/" + VERSION,
+    url="https://github.com/FitMango/fup2/tarball/" + VERSION,
     packages=['fup'],
     scripts=[
         'bin/fup'
