@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from typing import List
+import json
 import sys
 
 import boto3
@@ -135,8 +136,14 @@ class fupclient:
         if FupComponents.WEB in component_list:
             self._info(f"Creating component [{stack_name}.WEB]...")
             web_deployed = components.WebComponent(
-                app_name=stack_name,
+                stack_name=stack_name,
                 directory=web_path
+            ).init()
+        if FupComponents.API in component_list:
+            self._info(f"Creating component [{stack_name}.API]...")
+            api_deployed = components.APIComponent(
+                stack_name=stack_name,
+                directory=api_path
             ).init()
         # if FupComponents.DB in component_list:
         #     self._info(f"Creating component [{stack_name}.DB]...")
@@ -169,15 +176,65 @@ class fupclient:
         if FupComponents.WEB in component_list:
             self._info(f"Updating component [{stack_name}.WEB]...")
             stack.web_deployed = components.WebComponent(
-                app_name=stack_name,
+                stack_name=stack_name,
                 directory=web_path
             ).update()
+
+        if FupComponents.API in component_list:
+            self._info(f"Updating component [{stack_name}.API]...")
+            if (
+                    (stack.api_deployed == "0") or  # placeholder falsy
+                    (not stack.api_deployed) or     # actual falsy
+                    (stack.api_deployed == "null")  # dynamo falsky
+            ):
+                stack.api_deployed = components.APIComponent(
+                    stack_name=stack_name,
+                    directory=api_path
+                ).update()
+            else:
+                stack.api_deployed = components.APIComponent(
+                    stack_name=stack_name,
+                    directory=api_path,
+                    config=json.loads(stack.api_deployed)
+                ).update()
 
         self._info("Uploading stack configuration...")
         stack.save()
         self._success(
             "Updated stack [{}].".format(stack_name)
         )
+
+
+    def status(
+        self, stack_name: str, component_list=FupComponents.ALL,
+        web_path: str = "./web",
+        api_path: str = "./api",
+        db_path: str = "./schema.yaml"
+    ) -> dict:
+        # Fail if stack DNE:
+        if not self.stack_db.exists():
+            self._warn("Stack lookup table does not exist, try `init`.")
+            sys.exit(1)
+
+        stack = self.stack_db.get(stack_name)
+        outputs = {}
+
+        if FupComponents.WEB in component_list:
+            outputs['WEB'] = (
+                components.WebComponent(
+                    stack_name=stack_name,
+                    directory=web_path
+                ).status()
+            )
+
+        if FupComponents.API in component_list:
+            outputs['API'] = (
+                components.APIComponent(
+                    stack_name=stack_name,
+                    directory=api_path
+                ).status()
+            )
+        return outputs
 
     def teardown(self, stack_name: str, component_list) -> bool:
         self._log(stylize(
@@ -193,14 +250,20 @@ class fupclient:
 
         if FupComponents.API in component_list:
             if stack.api_deployed != "0":
-                # TODO: Tear down deployed assets
-                pass
+                try:
+                    components.APIComponent(
+                        stack_name=stack.api_deployed
+                    ).teardown()
+                    stack.api_deployed = "0"
+                    stack.save()
+                except Exception as e:
+                    raise ValueError("Could not remove API component: {}".format(e))
 
         if FupComponents.WEB in component_list:
             if stack.web_deployed != "0":
                 try:
                     components.WebComponent(
-                        app_name=stack.web_deployed
+                        stack_name=stack.web_deployed
                     ).teardown()
                     stack.web_deployed = "0"
                     stack.save()

@@ -87,6 +87,41 @@ def update(
     )
 
 
+@cli.command('status')
+@click.argument('name')
+@click.option(
+    '--components',
+    default="db,api,web"
+)
+@click.option('--web-path', default="./web", type=click.Path())
+@click.option('--db-path', default="./schema.yaml", type=click.Path())
+@click.option('--api-path', default="./api", type=click.Path())
+def status(
+    name: str,
+    components: str,
+    web_path: str,
+    api_path: str,
+    db_path: str,
+):
+    components = FupComponents.csv_to_components(components)
+    print_succeed(f"Fetcing status on stack [{name}] with components:")
+    print("\n".join([f"- {c}" for c in components]))
+
+    fup = fupclient(verbose=True)
+    status = fup.status(
+        name, components,
+        web_path=web_path, api_path=api_path, db_path=db_path
+    )
+    for component, readout in status.items():
+        print_succeed(f"{component}")
+        for key, val in readout.items():
+            print("   - {}:{}{}".format(
+                key,
+                (" " * int(25 - len(key))),
+                val
+            ))
+
+
 @cli.command('list')
 def list():
     fup = fupclient(verbose=True)

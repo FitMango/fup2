@@ -1,8 +1,10 @@
 import abc
 from abc import abstractmethod
 
+import json
 import mimetypes
 import os
+import subprocess
 from uuid import uuid4
 
 import yaml
@@ -10,7 +12,6 @@ import yaml
 import boto3
 from pynamodb.attributes import BooleanAttribute, UnicodeAttribute, MapAttribute, UTCDateTimeAttribute, NumberAttribute
 from pynamodb.models import Model
-
 
 
 class Component(abc.ABC):
@@ -36,7 +37,7 @@ class WebComponent(Component):
 
     def __init__(self, **kwargs):
         self.client = boto3.client('s3')
-        self.bucket_name = kwargs['app_name']
+        self.bucket_name = kwargs['stack_name']
         self.directory = kwargs.get('directory')
 
         self.website_configuration = {
@@ -82,7 +83,7 @@ class WebComponent(Component):
 
     def status(self, **kwargs):
         return {
-            "url": f"https://{self.stack_name}.s3.amazonaws.com/"
+            "url": f"https://{self.bucket_name}.s3.amazonaws.com/"
         }
 
     def teardown(self, **kwargs):
@@ -100,4 +101,127 @@ class DBComponent(Component):
 class APIComponent(Component):
 
     def __init__(self, **kwargs):
-        pass
+        self.stack_name = kwargs['stack_name']
+        self.directory = kwargs['directory']
+        _default_config = {
+            self.stack_name: {
+                "s3_bucket": self.stack_name + "-api",
+                "app_function": "main.APP",
+                "aws_region": "us-east-1",
+            }
+        }
+        pwd = os.getcwd()
+        os.chdir(self.directory)
+        self.config = kwargs.get('config', _default_config)
+        if self.stack_name not in self.config:
+            self.config[self.stack_name] = _default_config[self.stack_name]
+        with open("./zappa_settings.json", 'w') as fh:
+            fh.write(json.dumps(self.config))
+        os.chdir(pwd)
+
+    def __del__(self):
+        """
+        Remove the zappa_settings.json tempfile.
+        Arguments:
+            None
+        """
+        pwd = os.getcwd()
+        try:
+            os.chdir(self.directory)
+            # os.remove("./zappa_settings.json")
+        except Exception:
+            pass
+        os.chdir(pwd)
+
+    def init(self, **kwargs):
+        # create zappa file
+        pwd = os.getcwd()
+        os.chdir(self.directory)
+        print(
+            subprocess.run(
+                "pip3 install -U flask zappa",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        print(
+            subprocess.run(
+                "pip3 install -r ./requirements.txt",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        # zappa deploy (update)
+        print(
+            subprocess.run(
+                f"zappa deploy {self.stack_name}",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        os.chdir(pwd)
+        return json.dumps(self.config)
+        # return zappa config json
+
+    def update(self, **kwargs):
+        pwd = os.getcwd()
+        os.chdir(self.directory)
+        print(
+            subprocess.run(
+                "pip3 install -U flask zappa",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        print(
+            subprocess.run(
+                "pip3 install -r ./requirements.txt",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        print(
+            subprocess.run(
+                f"zappa update {self.stack_name}",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        os.chdir(pwd)
+        return json.dumps(self.config)
+
+
+    def status(self, **kwargs):
+        pwd = os.getcwd()
+        os.chdir(self.directory)
+        result = (
+            subprocess.run(
+                f"zappa status {self.stack_name}",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        ).decode('utf-8')
+        os.chdir(pwd)
+        results = {
+            line.split(":")[0].strip(): ":".join(line.split(":")[1:]).strip()
+            for line in result.split("\n")
+            if (
+                ('Invocations' in line) or
+                ('Errors' in line) or
+                ('Error Rate' in line) or
+                ('API Gateway URL' in line)
+            )
+        }
+        return results
+
+    def teardown(self, **kwargs):
+        pwd = os.getcwd()
+        os.chdir(self.directory)
+        print(
+            subprocess.run(
+                f"zappa undeploy {self.stack_name}",
+                shell=True,
+                stdout=subprocess.PIPE
+            ).stdout
+        )
+        os.chdir(pwd)
