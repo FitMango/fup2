@@ -40,7 +40,7 @@ def cli():
     default="db,api,web"
 )
 @click.option('--web-path', default="./web", type=click.Path())
-@click.option('--db-path', default="./db", type=click.Path())
+@click.option('--db-path', default="./schema.yaml", type=click.Path())
 @click.option('--api-path', default="./api", type=click.Path())
 def init(
     name: str,

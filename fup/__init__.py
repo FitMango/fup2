@@ -18,20 +18,6 @@ from . import components
 __version__ = "0.2.0"
 
 
-_attribute_lookup = {
-    'string': UnicodeAttribute,
-    'date': UTCDateTimeAttribute,
-    'object': MapAttribute,
-    'number': NumberAttribute
-}
-
-"""
-Contact:
-    - last_name: string,
-    - first_name: string,
-    - last_contact: date
-
-"""
 
 class FupComponents:
     DB = "DB"
@@ -158,7 +144,6 @@ class fupclient:
         if not self.stack_db.exists():
             self._warn("Stack lookup table does not exist, creating now...")
             self._create_stack_lookup_table()
-            self._info("Stack lookup table does not exist, creating now...")
             self._info("Stack lookup table created.")
 
         self._info(f"Creating stack [{stack_name}]...")
@@ -176,7 +161,7 @@ class fupclient:
 
         if FupComponents.DB in component_list:
             self._info(f"Creating component [{stack_name}.DB]...")
-            components.DBComponent().init(schemafile=db_path)
+            components.DBComponent(schemafile=db_path).init()
 
         new_stack = StackModel(stack_name)
         new_stack.save()
