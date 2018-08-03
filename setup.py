@@ -3,7 +3,7 @@ from distutils.core import setup
 import fup
 
 
-VERSION = fup.__version__
+VERSION = "0.2.0"
 
 
 setup(
