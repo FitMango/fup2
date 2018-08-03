@@ -2,13 +2,9 @@ from distutils.core import setup
 
 import fup
 
-"""
-git tag {VERSION}
-git push --tags
-python setup.py sdist upload -r pypi
-"""
 
 VERSION = fup.__version__
+
 
 setup(
     name="fup",
