@@ -81,7 +81,9 @@ class WebComponent(Component):
 
 
     def status(self, **kwargs):
-        raise NotImplementedError()
+        return {
+            "url": f"https://{self.stack_name}.s3.amazonaws.com/"
+        }
 
     def teardown(self, **kwargs):
         s3 = boto3.resource('s3')
