@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+
+import click
+
+import colored
+from colored import stylize
+
+from fup import fupclient, FupComponents
+
+
+def print_succeed(val: str):
+    """
+    Print in green!
+    """
+    click.echo(stylize(val, colored.fg("green"), colored.attr('bold')))
+
+
+def print_warn(val: str):
+    """
+    Print a warning.
+    """
+    click.echo(stylize(val, colored.fg("yellow")))
+
+def print_info(val: str):
+    """
+    Print in green!
+    """
+    click.echo(stylize(val, colored.fg("blue")))
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command('init')
+@click.argument('name')
+@click.option(
+    '--components',
+    default="db,api,web"
+)
+@click.option('--web-path', default="./web", type=click.Path())
+@click.option('--db-path', default="./db", type=click.Path())
+@click.option('--api-path', default="./api", type=click.Path())
+def init(
+    name: str,
+    components: str,
+    web_path: str,
+    api_path: str,
+    db_path: str,
+):
+    components = FupComponents.csv_to_components(components)
+    print_succeed(f"Creating new stack [{name}] with components:")
+    print("\n".join([f"- {c}" for c in components]))
+
+    fup = fupclient(verbose=True)
+    fup.init(
+        name, components,
+        web_path=web_path, api_path=api_path, db_path=db_path
+    )
+
+
+@cli.command('list')
+def list():
+    fup = fupclient(verbose=True)
+    pendings = fup.get_stacks(pending=True)
+    if pendings:
+        print_info("Pending stacks: ")
+        print("\n".join(["- {}".format(s) for s in pendings]))
+    nonpendings = fup.get_stacks(pending=False)
+    if nonpendings:
+        print_info("Deployed stacks: ")
+        print("\n".join(["- {}".format(s) for s in nonpendings]))
+
+    if not pendings and not nonpendings:
+        print_info("No stacks exist for this account.")
+        print_info("Create a new stack with `fup init [stack_name]`.")
+
+
+@cli.command('teardown')
+@click.argument('name')
+def teardown(name):
+    fup = fupclient(verbose=True)
+    if fup.stack_exists(name):
+        fup.teardown(name)
+    else:
+        print_warn(f"Stack [{name}] does not exist.")
+
+
+def main():
+    cli()
+
+
+if __name__ == "__main__":
+    main()
+
