@@ -53,9 +53,9 @@ class StackModel(Model):
 
     stack_name = UnicodeAttribute(hash_key=True)
     schema = MapAttribute(null=True)
-    db_deployed = BooleanAttribute(default=False)
-    api_deployed = BooleanAttribute(default=False)
-    web_deployed = BooleanAttribute(default=False)
+    db_deployed = UnicodeAttribute(default="")
+    api_deployed = UnicodeAttribute(default="")
+    web_deployed = UnicodeAttribute(default="")
 
 
 class fupclient:
@@ -68,7 +68,6 @@ class fupclient:
             region_name=self.aws_region,
             profile_name=self.aws_profile
         )
-        # self.session.resource('dynamodb')
         self.stack_db = StackModel
 
     def _log(self, msg: str, level=0):
@@ -105,37 +104,8 @@ class fupclient:
             return True
         return False
 
-    def teardown(self, stack_name: str) -> bool:
-        self._log(stylize(
-            f"Tearing down [{stack_name}]...",
-            colored.fg("red"), colored.attr('bold')
-        ))
-        # TODO: Tear down deployed assets
-        stack = self.stack_db.get(stack_name)
-        if stack.db_deployed:
-            # TODO: Tear down deployed assets
-            pass
-        self._success(f"Successfully tore down stack [{stack_name}].")
-        return stack.delete()
-
-    def get_stacks(self, pending=None):
-        try:
-            if pending is None:
-                response = [
-                    i.stack_name for i in self.stack_db.scan()
-                ]
-            else:
-                response = [
-                    i.stack_name for i in self.stack_db.scan(
-                        self.stack_db.api_deployed != pending
-                    )
-                ]
-            return response
-        except:
-            return []
-
     def init(
-        self, stack_name: str, component_list=[FupComponents.ALL],
+        self, stack_name: str, component_list=FupComponents.ALL,
         web_path: str = "./web",
         api_path: str = "./api",
         db_path: str = "./schema.yaml"
@@ -159,13 +129,97 @@ class fupclient:
         except:
             pass
 
-        if FupComponents.DB in component_list:
-            self._info(f"Creating component [{stack_name}.DB]...")
-            components.DBComponent(schemafile=db_path).init()
+        db_deployed = "0"
+        api_deployed = "0"
+        web_deployed = "0"
+        if FupComponents.WEB in component_list:
+            self._info(f"Creating component [{stack_name}.WEB]...")
+            web_deployed = components.WebComponent(
+                app_name=stack_name,
+                directory=web_path
+            ).init()
+        # if FupComponents.DB in component_list:
+        #     self._info(f"Creating component [{stack_name}.DB]...")
+        #     components.DBComponent(schemafile=db_path).init()
 
         new_stack = StackModel(stack_name)
+        new_stack.web_deployed = web_deployed
+        new_stack.api_deployed = api_deployed
+        new_stack.db_deployed = db_deployed
+        self._info("Uploading stack configuration...")
         new_stack.save()
         self._log(stylize(
             "Created stack [{}].".format(stack_name),
             colored.fg("green")
         ))
+
+    def update(
+        self, stack_name: str, component_list=FupComponents.ALL,
+        web_path: str = "./web",
+        api_path: str = "./api",
+        db_path: str = "./schema.yaml"
+    ) -> None:
+        # Fail if stack DNE:
+        if not self.stack_db.exists():
+            self._warn("Stack lookup table does not exist, try `init`.")
+            sys.exit(1)
+
+        stack = self.stack_db.get(stack_name)
+
+        if FupComponents.WEB in component_list:
+            self._info(f"Updating component [{stack_name}.WEB]...")
+            stack.web_deployed = components.WebComponent(
+                app_name=stack_name,
+                directory=web_path
+            ).update()
+
+        self._info("Uploading stack configuration...")
+        stack.save()
+        self._success(
+            "Updated stack [{}].".format(stack_name)
+        )
+
+    def teardown(self, stack_name: str, component_list) -> bool:
+        self._log(stylize(
+            f"Tearing down [{stack_name}]...",
+            colored.fg("red"), colored.attr('bold')
+        ))
+        stack = self.stack_db.get(stack_name)
+
+        if FupComponents.DB in component_list:
+            if stack.db_deployed != "0":
+                # TODO: Tear down deployed assets
+                pass
+
+        if FupComponents.API in component_list:
+            if stack.api_deployed != "0":
+                # TODO: Tear down deployed assets
+                pass
+
+        if FupComponents.WEB in component_list:
+            if stack.web_deployed != "0":
+                try:
+                    components.WebComponent(
+                        app_name=stack.web_deployed
+                    ).teardown()
+                    stack.web_deployed = "0"
+                    stack.save()
+                except Exception as e:
+                    raise ValueError("Could not remove WEB component: {}".format(e))
+        self._success(f"Successfully tore down stack [{stack_name}.{component_list}].")
+        stack = self.stack_db.get(stack_name)
+        if stack.web_deployed == stack.api_deployed == stack.db_deployed == "0":
+            self._success(f"Completely removing all traces of stack [{stack_name}].")
+            return stack.delete()
+            self._success("Done!")
+        else:
+            return False
+
+    def get_stacks(self) -> List[str]:
+        try:
+            return [
+                i.stack_name for i in self.stack_db.scan()
+            ]
+        except:
+            return []
+
