@@ -1,7 +1,5 @@
 from distutils.core import setup
 
-import fup
-
 
 VERSION = "0.2.0"
 
@@ -15,7 +13,7 @@ setup(
     license="Apache 2.0",
     keywords=[
     ],
-    url="https://github.com/FitMango/fup2/tarball/" + VERSION,
+    url="https://github.com/FitMango/fup2/",
     packages=['fup'],
     scripts=[
         'bin/fup'
