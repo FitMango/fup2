@@ -128,7 +128,7 @@ class APIComponent(Component):
         pwd = os.getcwd()
         try:
             os.chdir(self.directory)
-            # os.remove("./zappa_settings.json")
+            os.remove("./zappa_settings.json")
         except Exception:
             pass
         os.chdir(pwd)
