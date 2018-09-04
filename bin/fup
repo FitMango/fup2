@@ -60,29 +60,91 @@ def init(
     )
 
 
+@cli.command('update')
+@click.argument('name')
+@click.option(
+    '--components',
+    default="db,api,web"
+)
+@click.option('--web-path', default="./web", type=click.Path())
+@click.option('--db-path', default="./schema.yaml", type=click.Path())
+@click.option('--api-path', default="./api", type=click.Path())
+def update(
+    name: str,
+    components: str,
+    web_path: str,
+    api_path: str,
+    db_path: str,
+):
+    components = FupComponents.csv_to_components(components)
+    print_succeed(f"Updating stack [{name}] with components:")
+    print("\n".join([f"- {c}" for c in components]))
+
+    fup = fupclient(verbose=True)
+    fup.update(
+        name, components,
+        web_path=web_path, api_path=api_path, db_path=db_path
+    )
+
+
+@cli.command('status')
+@click.argument('name')
+@click.option(
+    '--components',
+    default="db,api,web"
+)
+@click.option('--web-path', default="./web", type=click.Path())
+@click.option('--db-path', default="./schema.yaml", type=click.Path())
+@click.option('--api-path', default="./api", type=click.Path())
+def status(
+    name: str,
+    components: str,
+    web_path: str,
+    api_path: str,
+    db_path: str,
+):
+    components = FupComponents.csv_to_components(components)
+    print_succeed(f"Fetcing status on stack [{name}] with components:")
+    print("\n".join([f"- {c}" for c in components]))
+
+    fup = fupclient(verbose=True)
+    status = fup.status(
+        name, components,
+        web_path=web_path, api_path=api_path, db_path=db_path
+    )
+    for component, readout in status.items():
+        print_succeed(f"{component}")
+        for key, val in readout.items():
+            print("   - {}:{}{}".format(
+                key,
+                (" " * int(25 - len(key))),
+                val
+            ))
+
+
 @cli.command('list')
 def list():
     fup = fupclient(verbose=True)
-    pendings = fup.get_stacks(pending=True)
+    pendings = fup.get_stacks()
     if pendings:
-        print_info("Pending stacks: ")
-        print("\n".join(["- {}".format(s) for s in pendings]))
-    nonpendings = fup.get_stacks(pending=False)
-    if nonpendings:
         print_info("Deployed stacks: ")
-        print("\n".join(["- {}".format(s) for s in nonpendings]))
-
-    if not pendings and not nonpendings:
+        print("\n".join(["- {}".format(s) for s in pendings]))
+    else:
         print_info("No stacks exist for this account.")
         print_info("Create a new stack with `fup init [stack_name]`.")
 
 
 @cli.command('teardown')
 @click.argument('name')
-def teardown(name):
+@click.option(
+    '--components',
+    default="db,api,web"
+)
+def teardown(name, components: str):
+    components = FupComponents.csv_to_components(components)
     fup = fupclient(verbose=True)
     if fup.stack_exists(name):
-        fup.teardown(name)
+        fup.teardown(name, component_list=components)
     else:
         print_warn(f"Stack [{name}] does not exist.")
 
