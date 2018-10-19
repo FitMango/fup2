@@ -112,6 +112,9 @@ class APIComponent(Component):
                 ),
                 "app_function": "main.APP",
                 "aws_region": "us-east-1",
+                "environment_variables": {
+                    "fup_stack_name": self.stack_name
+                }
             }
         }
         pwd = os.getcwd()
