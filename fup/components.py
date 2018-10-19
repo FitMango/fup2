@@ -1,3 +1,4 @@
+import sys
 import abc
 from abc import abstractmethod
 
@@ -102,7 +103,11 @@ class APIComponent(Component):
 
     def __init__(self, **kwargs):
         self.stack_name = kwargs['stack_name']
-        self.directory = kwargs['directory']
+        try:
+            self.stack_name = list(json.loads(self.stack_name).keys())[0]
+        except:
+            pass
+        self.directory = kwargs.get('directory', "api")
         _default_config = {
             self.stack_name: {
                 "s3_bucket": (
@@ -223,7 +228,7 @@ class APIComponent(Component):
         os.chdir(self.directory)
         print(
             subprocess.run(
-                f"zappa undeploy {self.stack_name}",
+                f"zappa undeploy -y {self.stack_name}",
                 shell=True,
                 stdout=subprocess.PIPE
             ).stdout

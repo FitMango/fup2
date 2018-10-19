@@ -252,7 +252,7 @@ class fupclient:
             if stack.api_deployed != "0":
                 try:
                     components.APIComponent(
-                        stack_name=stack.api_deployed
+                        stack_name=stack.api_deployed,
                     ).teardown()
                     stack.api_deployed = "0"
                     stack.save()
