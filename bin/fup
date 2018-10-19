@@ -41,17 +41,15 @@ def version():
 @click.argument('name')
 @click.option(
     '--components',
-    default="db,api,web"
+    default="api,web"
 )
 @click.option('--web-path', default="./web", type=click.Path())
-@click.option('--db-path', default="./schema.yaml", type=click.Path())
 @click.option('--api-path', default="./api", type=click.Path())
 def init(
     name: str,
     components: str,
     web_path: str,
     api_path: str,
-    db_path: str,
 ):
     components = FupComponents.csv_to_components(components)
     print_succeed(f"Creating new stack [{name}] with components:")
@@ -60,7 +58,7 @@ def init(
     fup = fupclient(verbose=True)
     fup.init(
         name, components,
-        web_path=web_path, api_path=api_path, db_path=db_path
+        web_path=web_path, api_path=api_path
     )
 
 
@@ -68,17 +66,15 @@ def init(
 @click.argument('name')
 @click.option(
     '--components',
-    default="db,api,web"
+    default="api,web"
 )
 @click.option('--web-path', default="./web", type=click.Path())
-@click.option('--db-path', default="./schema.yaml", type=click.Path())
 @click.option('--api-path', default="./api", type=click.Path())
 def update(
     name: str,
     components: str,
     web_path: str,
     api_path: str,
-    db_path: str,
 ):
     components = FupComponents.csv_to_components(components)
     print_succeed(f"Updating stack [{name}] with components:")
@@ -87,7 +83,7 @@ def update(
     fup = fupclient(verbose=True)
     fup.update(
         name, components,
-        web_path=web_path, api_path=api_path, db_path=db_path
+        web_path=web_path, api_path=api_path,
     )
 
 
@@ -95,17 +91,15 @@ def update(
 @click.argument('name')
 @click.option(
     '--components',
-    default="db,api,web"
+    default="api,web"
 )
 @click.option('--web-path', default="./web", type=click.Path())
-@click.option('--db-path', default="./schema.yaml", type=click.Path())
 @click.option('--api-path', default="./api", type=click.Path())
 def status(
     name: str,
     components: str,
     web_path: str,
     api_path: str,
-    db_path: str,
 ):
     components = FupComponents.csv_to_components(components)
     print_succeed(f"Fetcing status on stack [{name}] with components:")
@@ -114,7 +108,7 @@ def status(
     fup = fupclient(verbose=True)
     status = fup.status(
         name, components,
-        web_path=web_path, api_path=api_path, db_path=db_path
+        web_path=web_path, api_path=api_path
     )
     for component, readout in status.items():
         print_succeed(f"{component}")
@@ -142,7 +136,7 @@ def list():
 @click.argument('name')
 @click.option(
     '--components',
-    default="db,api,web"
+    default="api,web"
 )
 def teardown(name, components: str):
     components = FupComponents.csv_to_components(components)

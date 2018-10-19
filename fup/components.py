@@ -11,8 +11,8 @@ from uuid import uuid4
 import yaml
 
 import boto3
-from pynamodb.attributes import BooleanAttribute, UnicodeAttribute, MapAttribute, UTCDateTimeAttribute, NumberAttribute
-from pynamodb.models import Model
+# from pynamodb.attributes import BooleanAttribute, UnicodeAttribute, MapAttribute, UTCDateTimeAttribute, NumberAttribute
+# from pynamodb.models import Model
 
 
 class Component(abc.ABC):
@@ -92,11 +92,6 @@ class WebComponent(Component):
         bucket = s3.Bucket(self.bucket_name)
         bucket.objects.all().delete()
         return bucket.delete()
-
-class DBComponent(Component):
-
-    def __init__(self, **kwargs):
-        pass
 
 
 class APIComponent(Component):
