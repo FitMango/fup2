@@ -20,5 +20,10 @@ setup(
     ],
     classifiers=[],
     install_requires=[
+        "boto3",
+        "colored",
+        "zappa",
+        "pynamodb",
+        "click",
     ],
 )

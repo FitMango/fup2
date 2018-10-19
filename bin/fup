@@ -5,7 +5,7 @@ import click
 import colored
 from colored import stylize
 
-from fup import fupclient, FupComponents
+from fup import fupclient, FupComponents, __version__
 
 
 def print_succeed(val: str):
@@ -32,6 +32,10 @@ def print_info(val: str):
 def cli():
     pass
 
+
+@cli.command('version')
+def version():
+    print(__version__)
 
 @cli.command('init')
 @click.argument('name')

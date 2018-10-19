@@ -48,15 +48,15 @@ class WebComponent(Component):
     def init(self, **kwargs):
         # create the bucket
         self.bucket = self.client.create_bucket(
-            Bucket=self.bucket_name,
+            Bucket=self.bucket_name + "-fup",
             ACL='public-read'
         )
         self.client.put_bucket_website(
-            Bucket=self.bucket_name,
+            Bucket=self.bucket_name + "-fup",
             WebsiteConfiguration=self.website_configuration
         )
         self.update()
-        return self.bucket_name
+        return self.bucket_name + "-fup"
 
     def update(self, **kwargs):
         session = boto3.Session()
@@ -70,7 +70,7 @@ class WebComponent(Component):
                     print("Skipping file {} with no MIME type.".format(name))
                     continue
                 print(mimetype + "\t" + os.path.sep.join(path))
-                s3.Bucket(self.bucket_name).upload_file(
+                s3.Bucket(self.bucket_name + "-fup").upload_file(
                     os.path.sep.join(path),
                     os.path.sep.join(path[2:]),
                     ExtraArgs={
@@ -78,12 +78,12 @@ class WebComponent(Component):
                         'GrantRead': 'uri="http://acs.amazonaws.com/groups/global/AllUsers"',
                     }
                 )
-        return self.bucket_name
+        return self.bucket_name + "-fup"
 
 
     def status(self, **kwargs):
         return {
-            "url": f"https://{self.bucket_name}.s3.amazonaws.com/"
+            "url": f"https://{self.bucket_name}-fup.s3.amazonaws.com/"
         }
 
     def teardown(self, **kwargs):
@@ -105,7 +105,11 @@ class APIComponent(Component):
         self.directory = kwargs['directory']
         _default_config = {
             self.stack_name: {
-                "s3_bucket": self.stack_name + "-api",
+                "s3_bucket": (
+                    self.stack_name + "-api-fup"
+                    if not self.stack_name.endswith('-api-fup')
+                    else self.stack_name
+                ),
                 "app_function": "main.APP",
                 "aws_region": "us-east-1",
             }

@@ -8,7 +8,6 @@ name = "pypi"
 colored = "==1.3.5"
 zappa = "*"
 pynamodb = "*"
-"e1839a8" = {path = ".", editable = true}
 click = "*"
 
 [dev-packages]
