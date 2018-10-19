@@ -23,7 +23,7 @@ setup(
         "boto3",
         "colored",
         "zappa",
-        "pynamodb",
+        # "pynamodb",
         "click",
     ],
 )
