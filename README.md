@@ -11,8 +11,6 @@ pip3 install fup
 
 # School me in the ways of fup
 
-Take your web-app and look upon it: Lo! do you see a simple deploy process? Nay? Then hark: The day of fup is come.
-
 `fup` is a command-line tool that takes the annoying out of deploying serverless web applications. In the `fup` world, there are three components to a web app: A database, an API, and a web component. (There will someday be more — for example, mobile apps — but that day is not yet here.)
 
 - **Database.** Nicknamed `db`. This accepts data when you have data and has data when you want data.
